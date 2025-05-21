@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/sales_management_db
+    username: postgres
+    password: postgres
+application:
+  services:
+    customer-management: http://localhost:8082/customer-management
+    product-management: http://localhost:8083/product-management
+    shop-management: http://localhost:8085/shop-management
