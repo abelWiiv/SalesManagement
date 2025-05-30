@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  sales-management-db:
+    image: postgres:15
+    container_name: sales-management-db
+    environment:
+      POSTGRES_DB: sales_management_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5437:5432"
+    volumes:
+      - sales-management-data:/var/lib/postgresql/data
+    networks:
+      - supermarket-network
+  sales-management-service:
+    build: .
+    container_name: sales-management-service
+    ports:
+      - "8086:8086"
+    environment:
+      DB_HOST: sales-management-db
+      DB_PORT: 5432
+      DB_NAME: sales_management_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    depends_on:
+      - sales-management-db
+    networks:
+      - supermarket-network
+volumes:
+  sales-management-data:
+networks:
+  supermarket-network:
+    driver: bridge
