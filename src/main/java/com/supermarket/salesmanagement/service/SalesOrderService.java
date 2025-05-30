@@ -168,7 +168,7 @@ public class SalesOrderService {
         // Add item to sales order and save it
         salesOrder.getItems().add(newItem);
         salesOrder.calculateTotalAmount(); // Recalculate total amount
-        salesOrderItemRepository.save(newItem); // Save the new item
+        salesOrderItemRepository.save(newItem);
         SalesOrder updatedOrder = salesOrderRepository.save(salesOrder); // Save the updated sales order
 
         orderStatusPublisher.publishOrderStatusEvent(new OrderStatusEvent(updatedOrder.getId(), updatedOrder.getStatus()));
