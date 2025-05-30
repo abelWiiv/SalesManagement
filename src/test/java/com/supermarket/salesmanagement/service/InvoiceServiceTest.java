@@ -188,27 +188,27 @@ class InvoiceServiceTest {
         verify(invoiceRepository, times(1)).findAll(pageable);
     }
 
-//    @Test
-//    void updateInvoice_Success() {
-//        // Arrange
-//        InvoiceUpdateRequest request = new InvoiceUpdateRequest();
-//        request.setSalesOrderId(salesOrderId);
-//        request.setInvoiceDate(LocalDate.now().plusDays(1));
-//        request.setPaymentStatus(PaymentStatus.PAID);
-//
-//        when(invoiceRepository.findById(invoiceId)).thenReturn(Optional.of(invoice));
-//        when(salesOrderRepository.findById(salesOrderId)).thenReturn(Optional.of(salesOrder));
-//        when(invoiceRepository.save(any(Invoice.class))).thenReturn(invoice);
-//
-//        // Act
-//        InvoiceResponse response = invoiceService.updateInvoice(invoiceId, request);
-//
-//        // Assert
-//        assertNotNull(response);
-//        assertEquals(invoiceId, response.getId());
-//        assertEquals(PaymentStatus.PAID, response.getPaymentStatus());
-//        verify(invoiceRepository, times(1)).save(any(Invoice.class));
-//    }
+    @Test
+    void updateInvoice_Success() {
+        // Arrange
+        InvoiceUpdateRequest request = new InvoiceUpdateRequest();
+        request.setSalesOrderId(salesOrderId);
+        request.setInvoiceDate(LocalDate.now().plusDays(1));
+        request.setPaymentStatus(PaymentStatus.PAID);
+
+        when(invoiceRepository.findById(invoiceId)).thenReturn(Optional.of(invoice));
+        when(salesOrderRepository.findById(salesOrderId)).thenReturn(Optional.of(salesOrder));
+        when(invoiceRepository.save(any(Invoice.class))).thenReturn(invoice);
+
+        // Act
+        InvoiceResponse response = invoiceService.updateInvoice(invoiceId, request);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(invoiceId, response.getId());
+        assertEquals(PaymentStatus.PAID, response.getPaymentStatus());
+        verify(invoiceRepository, times(1)).save(any(Invoice.class));
+    }
 
     @Test
     void deleteInvoice_Success() {
@@ -218,7 +218,7 @@ class InvoiceServiceTest {
         // Act
         invoiceService.deleteInvoice(invoiceId);
 
-        // Assert
+        // Assert and show
         verify(invoiceRepository, times(1)).deleteById(invoiceId);
     }
 
