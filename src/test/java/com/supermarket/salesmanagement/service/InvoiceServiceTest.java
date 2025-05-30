@@ -218,7 +218,7 @@ class InvoiceServiceTest {
         // Act
         invoiceService.deleteInvoice(invoiceId);
 
-        // Assert
+        // Assert and show
         verify(invoiceRepository, times(1)).deleteById(invoiceId);
     }
 
