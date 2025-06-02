@@ -232,4 +232,13 @@ class InvoiceServiceTest {
         assertEquals("Invoice with ID " + invoiceId + " not found", exception.getMessage());
         verify(invoiceRepository, never()).deleteById(invoiceId);
     }
+
+    @Test
+    void createInvoice_NullRequest_ThrowsException() {
+        // Act & Assert
+        CustomException exception = assertThrows(CustomException.class, () -> invoiceService.createInvoice(null));
+        assertEquals("Invoice creation request cannot be null", exception.getMessage());
+        verify(salesOrderRepository, never()).findById(any());
+        verify(invoiceRepository, never()).save(any());
+    }
 }
