@@ -232,4 +232,145 @@ class InvoiceServiceTest {
         assertEquals("Invoice with ID " + invoiceId + " not found", exception.getMessage());
         verify(invoiceRepository, never()).deleteById(invoiceId);
     }
+
+    @Test
+    void createInvoice_NullRequest_ThrowsException() {
+        // Act & Assert
+        CustomException exception = assertThrows(CustomException.class, () -> invoiceService.createInvoice(null));
+        assertEquals("Invoice creation request cannot be null", exception.getMessage());
+        verify(salesOrderRepository, never()).findById(any());
+        verify(invoiceRepository, never()).save(any());
+    }
+
+    @Test
+    void createInvoice_NullSalesOrderId_ThrowsException() {
+        // Arrange
+        InvoiceCreateRequest request = new InvoiceCreateRequest();
+        request.setSalesOrderId(null);
+        request.setInvoiceDate(LocalDate.now());
+
+        // Act & Assert
+        CustomException exception = assertThrows(CustomException.class, () -> invoiceService.createInvoice(request));
+        assertEquals("Sales order ID cannot be null", exception.getMessage());
+        verify(salesOrderRepository, never()).findById(any());
+        verify(invoiceRepository, never()).save(any());
+    }
+
+    @Test
+    void createInvoice_NullInvoiceDate_ThrowsException() {
+        // Arrange
+        InvoiceCreateRequest request = new InvoiceCreateRequest();
+        request.setSalesOrderId(salesOrderId);
+        request.setInvoiceDate(null);
+
+        when(salesOrderRepository.findById(salesOrderId)).thenReturn(Optional.of(salesOrder));
+        when(invoiceRepository.existsBySalesOrderId(salesOrderId)).thenReturn(false);
+
+        // Act & Assert
+        CustomException exception = assertThrows(CustomException.class, () -> invoiceService.createInvoice(request));
+        assertEquals("Invoice date cannot be null", exception.getMessage());
+        verify(invoiceRepository, never()).save(any());
+    }
+
+    @Test
+    void createInvoice_SalesOrderCompleted_ThrowsException() {
+        // Arrange
+        salesOrder.setStatus(OrderStatus.CONFIRMED);
+        InvoiceCreateRequest request = new InvoiceCreateRequest();
+        request.setSalesOrderId(salesOrderId);
+        request.setInvoiceDate(LocalDate.now());
+
+        when(salesOrderRepository.findById(salesOrderId)).thenReturn(Optional.of(salesOrder));
+
+        // Act & Assert
+        CustomException exception = assertThrows(CustomException.class, () -> invoiceService.createInvoice(request));
+        assertEquals("Cannot create invoice for completed sales order with ID " + salesOrderId, exception.getMessage());
+        verify(invoiceRepository, never()).save(any());
+    }
+
+    @Test
+    void updateInvoice_NullRequest_ThrowsException() {
+        // Act & Assert
+        CustomException exception = assertThrows(CustomException.class, () -> invoiceService.updateInvoice(invoiceId, null));
+        assertEquals("Invoice update request cannot be null", exception.getMessage());
+        verify(invoiceRepository, never()).findById(any());
+        verify(invoiceRepository, never()).save(any());
+    }
+
+    @Test
+    void updateInvoice_NullSalesOrderId_ThrowsException() {
+        // Arrange
+        InvoiceUpdateRequest request = new InvoiceUpdateRequest();
+        request.setSalesOrderId(null);
+        request.setInvoiceDate(LocalDate.now());
+        request.setPaymentStatus(PaymentStatus.PAID);
+
+        when(invoiceRepository.findById(invoiceId)).thenReturn(Optional.of(invoice));
+
+        // Act & Assert
+        CustomException exception = assertThrows(CustomException.class, () -> invoiceService.updateInvoice(invoiceId, request));
+        assertEquals("Sales order ID cannot be null", exception.getMessage());
+        verify(invoiceRepository, never()).save(any());
+    }
+
+    @Test
+    void updateInvoice_SalesOrderNotFound_ThrowsException() {
+        // Arrange
+        InvoiceUpdateRequest request = new InvoiceUpdateRequest();
+        request.setSalesOrderId(salesOrderId);
+        request.setInvoiceDate(LocalDate.now());
+        request.setPaymentStatus(PaymentStatus.PAID);
+
+        when(invoiceRepository.findById(invoiceId)).thenReturn(Optional.of(invoice));
+        when(salesOrderRepository.findById(salesOrderId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        CustomException exception = assertThrows(CustomException.class, () -> invoiceService.updateInvoice(invoiceId, request));
+        assertEquals("Sales order with ID " + salesOrderId + " not found", exception.getMessage());
+        verify(invoiceRepository, never()).save(any());
+    }
+
+    @Test
+    void updateInvoice_PaymentStatusAlreadySet_ThrowsException() {
+        // Arrange
+        invoice.setPaymentStatus(PaymentStatus.PAID);
+        InvoiceUpdateRequest request = new InvoiceUpdateRequest();
+        request.setSalesOrderId(salesOrderId);
+        request.setInvoiceDate(LocalDate.now());
+        request.setPaymentStatus(PaymentStatus.PAID);
+
+        when(invoiceRepository.findById(invoiceId)).thenReturn(Optional.of(invoice));
+        when(salesOrderRepository.findById(salesOrderId)).thenReturn(Optional.of(salesOrder));
+
+        // Act & Assert
+        CustomException exception = assertThrows(CustomException.class, () -> invoiceService.updateInvoice(invoiceId, request));
+        assertEquals("Payment status is already set to PAID for invoice with ID " + invoiceId, exception.getMessage());
+        verify(invoiceRepository, never()).save(any());
+    }
+
+    @Test
+    void getAllInvoices_EmptyPage_Success() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Invoice> emptyPage = new PageImpl<>(Arrays.asList());
+        when(invoiceRepository.findAll(pageable)).thenReturn(emptyPage);
+
+        // Act
+        Page<InvoiceResponse> result = invoiceService.getAllInvoices(pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.getContent().isEmpty());
+        assertEquals(0, result.getTotalElements());
+        verify(invoiceRepository, times(1)).findAll(pageable);
+    }
+
+    @Test
+    void deleteInvoice_NullId_ThrowsException() {
+        // Act & Assert
+        CustomException exception = assertThrows(CustomException.class, () -> invoiceService.deleteInvoice(null));
+        assertEquals("Invoice ID cannot be null", exception.getMessage());
+        verify(invoiceRepository, never()).deleteById(any());
+    }
+
 }

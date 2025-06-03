@@ -47,7 +47,7 @@ public class SalesOrderService {
         validateCreateRequest(request);
 
         // Validate customer and shop
-        customerClient.getCustomerById(request.getCustomerId());
+       customerClient.getCustomerById(request.getCustomerId());
         shopClient.getShopById(request.getShopId());
 
         SalesOrder salesOrder = SalesOrder.builder()
@@ -156,19 +156,50 @@ public class SalesOrderService {
         productClient.getProductById(request.getProductId());
         validateItem(request.getQuantity(), request.getUnitPrice());
 
-        // Create new sales order item
-        SalesOrderItem newItem = SalesOrderItem.builder()
-                .salesOrder(salesOrder)
-                .productId(request.getProductId())
-                .quantity(request.getQuantity())
-                .unitPrice(request.getUnitPrice())
-                .totalPrice(request.getUnitPrice().multiply(BigDecimal.valueOf(request.getQuantity())))
-                .build();
+        //check if an item with the same productId Exist
+        SalesOrderItem existingItem = salesOrder.getItems().stream()
+                .filter(item -> item.getProductId().equals(request.getProductId()))
+                .findFirst()
+                .orElse(null);
 
-        // Add item to sales order and save it
-        salesOrder.getItems().add(newItem);
-        salesOrder.calculateTotalAmount(); // Recalculate total amount
-        salesOrderItemRepository.save(newItem);
+
+        SalesOrderItem newItem;
+        if(existingItem != null){
+
+            //merge with existing item
+            int newQuantity = existingItem.getQuantity() + request.getQuantity();
+
+            //calculate weighted average unit price
+            BigDecimal existingTotal = existingItem.getUnitPrice().multiply(BigDecimal.valueOf(existingItem.getQuantity()));
+            BigDecimal newTotal = request.getUnitPrice().multiply(BigDecimal.valueOf(request.getQuantity()));
+            BigDecimal totalPrice = existingTotal.add(newTotal);
+            BigDecimal weightedUnitPrice = totalPrice.divide(BigDecimal.valueOf(newQuantity), 2 , BigDecimal.ROUND_HALF_UP);
+
+            //update existing item
+            existingItem.setQuantity(newQuantity);
+            existingItem.setUnitPrice(weightedUnitPrice);
+            existingItem.setTotalPrice(totalPrice);
+            salesOrderItemRepository.save(existingItem);
+            newItem = existingItem;
+
+        }else {
+
+            // Create new sales order item
+            newItem = SalesOrderItem.builder()
+                    .salesOrder(salesOrder)
+                    .productId(request.getProductId())
+                    .quantity(request.getQuantity())
+                    .unitPrice(request.getUnitPrice())
+                    .totalPrice(request.getUnitPrice().multiply(BigDecimal.valueOf(request.getQuantity())))
+                    .build();
+
+            // Add item to sales order and save it
+            salesOrder.getItems().add(newItem);
+            salesOrderItemRepository.save(newItem);
+
+        }
+        // Recalculate total amount and save the sales order
+        salesOrder.calculateTotalAmount();
         SalesOrder updatedOrder = salesOrderRepository.save(salesOrder); // Save the updated sales order
 
         orderStatusPublisher.publishOrderStatusEvent(new OrderStatusEvent(updatedOrder.getId(), updatedOrder.getStatus()));
